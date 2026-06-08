@@ -47,6 +47,11 @@ public class Commande {
         return platsCommandes.size();
     }
 
+    // Retourne la liste des plats commandés (utilisée par l'interface graphique)
+    public ArrayList<Plat> getPlatsCommandes() {
+        return platsCommandes;
+    }
+
     // Affiche le récapitulatif complet de la commande avec le total
     public void afficherRecapitulatif() {
         System.out.println("\n====== RÉCAPITULATIF DE LA COMMANDE ======");
