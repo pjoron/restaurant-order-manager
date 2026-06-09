@@ -47,6 +47,11 @@ public class Commande {
         return platsCommandes.size();
     }
 
+    // Retourne le numéro de table de la commande
+    public int getNumeroTable() {
+        return numeroTable;
+    }
+
     // Retourne la liste des plats commandés (utilisée par l'interface graphique)
     public ArrayList<Plat> getPlatsCommandes() {
         return platsCommandes;
