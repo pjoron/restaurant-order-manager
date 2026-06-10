@@ -10,8 +10,11 @@ public class FenetreRestaurant extends JFrame {
     // Le menu du restaurant (liste de tous les plats disponibles)
     private Menu menu;
 
-    // La commande en cours du client
+    // La commande en cours de saisie pour la table actuelle
     private Commande commande;
+
+    // Gestionnaire de toutes les commandes validées (commandes en cours dans le restaurant)
+    private GestionCommandes gestionCommandes;
 
     // --- Composants Swing de l'interface ---
 
@@ -21,27 +24,42 @@ public class FenetreRestaurant extends JFrame {
     // Liste graphique des plats du menu (JList avec JScrollPane)
     private JList<String> listeMenu;
 
-    // Zone de texte pour afficher la commande en cours (JTextArea)
+    // Zone de texte pour afficher la commande en cours de saisie (JTextArea)
     private JTextArea zoneCommande;
 
-    // Étiquette affichant le total de la commande (JLabel)
+    // Étiquette affichant le total de la commande en cours (JLabel)
     private JLabel labelTotal;
 
-    // Boutons d'action (JButton)
+    // Boutons d'action pour la commande en cours (JButton)
     private JButton boutonAjouter;
     private JButton boutonRetirer;
     private JButton boutonValider;
+
+    // Liste graphique des commandes validées en cours (JList)
+    private JList<String> listeCommandes;
+
+    // Modèle de données de la liste des commandes en cours
+    private DefaultListModel<String> modeleCommandes;
+
+    // Boutons d'action pour les commandes en cours
+    private JButton boutonAfficherCommande;
+    private JButton boutonSupprimerCommande;
 
     // Constructeur : construit toute la fenêtre
     public FenetreRestaurant() {
 
         // On initialise le menu du restaurant
         menu = new Menu();
+
+        // On initialise le gestionnaire de commandes (vide au départ)
+        gestionCommandes = new GestionCommandes();
+
+        // Aucune commande en cours de saisie au démarrage
         commande = null;
 
         // --- Configuration de la fenêtre principale (JFrame) ---
         setTitle("Restaurant Java Bistro");
-        setSize(750, 520);
+        setSize(1050, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -64,11 +82,11 @@ public class FenetreRestaurant extends JFrame {
         // Premier menu : "Fichier"
         JMenu menuFichier = new JMenu("Fichier");
 
-        // Élément "Nouvelle commande" pour réinitialiser
+        // Élément "Nouvelle commande" pour réinitialiser la saisie
         JMenuItem itemNouvelle = new JMenuItem("Nouvelle commande");
         itemNouvelle.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                reinitialiserCommande();
+                preparerNouvelleCommande();
             }
         });
 
@@ -147,21 +165,20 @@ public class FenetreRestaurant extends JFrame {
         panneauHaut.add(champNumeroTable);
         panneauHaut.add(boutonConfirmerTable);
 
-        // ---- PANNEAU CENTRAL : menu à gauche, commande à droite ----
-        JPanel panneauCentre = new JPanel(new GridLayout(1, 2, 10, 0));
+        // ---- PANNEAU CENTRAL : 3 colonnes (menu | commande en cours | commandes validées) ----
+        JPanel panneauCentre = new JPanel(new GridLayout(1, 3, 10, 0));
 
-        // --- Côté gauche : liste des plats du menu (JList + JScrollPane) ---
+        // --- Colonne 1 : liste des plats du menu (JList + JScrollPane) ---
         JPanel panneauMenu = new JPanel(new BorderLayout());
         panneauMenu.setBorder(BorderFactory.createTitledBorder("Menu du restaurant"));
 
-        // On crée le modèle de données pour la JList
+        // On crée le modèle de données pour la JList du menu
         DefaultListModel<String> modeleMenu = new DefaultListModel<>();
         ArrayList<Plat> tousLesPlats = menu.getPlats();
 
         // On remplit la liste avec chaque plat du menu
         for (int i = 0; i < tousLesPlats.size(); i++) {
             Plat p = tousLesPlats.get(i);
-            // On formate l'affichage : numéro, nom et prix
             modeleMenu.addElement(String.format("[%d] %s  -  %.2f EUR", (i + 1), p.getNom(), p.getPrix()));
         }
 
@@ -174,9 +191,9 @@ public class FenetreRestaurant extends JFrame {
         JScrollPane scrollMenu = new JScrollPane(listeMenu);
         panneauMenu.add(scrollMenu, BorderLayout.CENTER);
 
-        // --- Côté droit : récapitulatif de la commande ---
+        // --- Colonne 2 : commande en cours de saisie ---
         JPanel panneauCommande = new JPanel(new BorderLayout(5, 5));
-        panneauCommande.setBorder(BorderFactory.createTitledBorder("Votre commande"));
+        panneauCommande.setBorder(BorderFactory.createTitledBorder("Commande en cours"));
 
         // Zone de texte non-éditable pour afficher la commande (JTextArea)
         zoneCommande = new JTextArea();
@@ -192,18 +209,11 @@ public class FenetreRestaurant extends JFrame {
         labelTotal.setFont(new Font("Arial", Font.BOLD, 14));
         labelTotal.setHorizontalAlignment(SwingConstants.RIGHT);
 
-        panneauCommande.add(scrollCommande, BorderLayout.CENTER);
-        panneauCommande.add(labelTotal, BorderLayout.SOUTH);
-
-        // On assemble les deux panneaux dans le panneau central
-        panneauCentre.add(panneauMenu);
-        panneauCentre.add(panneauCommande);
-
-        // ---- PANNEAU DU BAS : boutons d'action ----
-        JPanel panneauBas = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
+        // Panneau des boutons de la commande en cours
+        JPanel panneauBoutonsCommande = new JPanel(new GridLayout(3, 1, 0, 5));
 
         // Bouton "Ajouter" : ajoute le plat sélectionné à la commande
-        boutonAjouter = new JButton("Ajouter à la commande");
+        boutonAjouter = new JButton("Ajouter le plat sélectionné");
         boutonAjouter.setEnabled(false); // Désactivé jusqu'à confirmation de la table
         boutonAjouter.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -220,7 +230,7 @@ public class FenetreRestaurant extends JFrame {
             }
         });
 
-        // Bouton "Valider" : valide et envoie la commande en cuisine
+        // Bouton "Valider" : valide la commande et l'ajoute aux commandes en cours
         boutonValider = new JButton("Valider la commande");
         boutonValider.setEnabled(false);
         boutonValider.addActionListener(new ActionListener() {
@@ -229,20 +239,72 @@ public class FenetreRestaurant extends JFrame {
             }
         });
 
-        panneauBas.add(boutonAjouter);
-        panneauBas.add(boutonRetirer);
-        panneauBas.add(boutonValider);
+        panneauBoutonsCommande.add(boutonAjouter);
+        panneauBoutonsCommande.add(boutonRetirer);
+        panneauBoutonsCommande.add(boutonValider);
+
+        // Panneau bas de la colonne 2 : total + boutons
+        JPanel basCommande = new JPanel(new BorderLayout(0, 5));
+        basCommande.add(labelTotal, BorderLayout.NORTH);
+        basCommande.add(panneauBoutonsCommande, BorderLayout.CENTER);
+
+        panneauCommande.add(scrollCommande, BorderLayout.CENTER);
+        panneauCommande.add(basCommande, BorderLayout.SOUTH);
+
+        // --- Colonne 3 : commandes validées en cours ---
+        JPanel panneauCommandesEnCours = new JPanel(new BorderLayout(5, 5));
+        panneauCommandesEnCours.setBorder(BorderFactory.createTitledBorder("Commandes en cours"));
+
+        // Modèle de données pour la liste des commandes validées
+        modeleCommandes = new DefaultListModel<>();
+
+        // JList des commandes en cours
+        listeCommandes = new JList<>(modeleCommandes);
+        listeCommandes.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        listeCommandes.setFont(new Font("Monospaced", Font.PLAIN, 12));
+
+        // On enveloppe dans un JScrollPane
+        JScrollPane scrollCommandes = new JScrollPane(listeCommandes);
+
+        // Panneau des boutons pour les commandes en cours
+        JPanel panneauBoutonsListe = new JPanel(new GridLayout(2, 1, 0, 5));
+
+        // Bouton "Afficher" : affiche le détail de la commande sélectionnée
+        boutonAfficherCommande = new JButton("Afficher la commande");
+        boutonAfficherCommande.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                afficherCommandeSelectionnee();
+            }
+        });
+
+        // Bouton "Supprimer" : supprime la commande sélectionnée
+        boutonSupprimerCommande = new JButton("Supprimer la commande");
+        boutonSupprimerCommande.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                supprimerCommandeSelectionnee();
+            }
+        });
+
+        panneauBoutonsListe.add(boutonAfficherCommande);
+        panneauBoutonsListe.add(boutonSupprimerCommande);
+
+        panneauCommandesEnCours.add(scrollCommandes, BorderLayout.CENTER);
+        panneauCommandesEnCours.add(panneauBoutonsListe, BorderLayout.SOUTH);
+
+        // On assemble les trois colonnes dans le panneau central
+        panneauCentre.add(panneauMenu);
+        panneauCentre.add(panneauCommande);
+        panneauCentre.add(panneauCommandesEnCours);
 
         // ---- Assemblage final du panneau principal ----
         panneauPrincipal.add(panneauHaut, BorderLayout.NORTH);
         panneauPrincipal.add(panneauCentre, BorderLayout.CENTER);
-        panneauPrincipal.add(panneauBas, BorderLayout.SOUTH);
 
         // On ajoute le panneau principal à la fenêtre
         add(panneauPrincipal);
     }
 
-    // Méthode : confirme le numéro de table et crée la commande
+    // Méthode : confirme le numéro de table et crée la commande en cours
     private void confirmerTable() {
 
         String texte = champNumeroTable.getText().trim();
@@ -268,13 +330,17 @@ public class FenetreRestaurant extends JFrame {
             // On met à jour le titre de la fenêtre
             setTitle("Restaurant Java Bistro  -  Table N°" + numTable);
 
-            // On active les boutons d'action
+            // On active les boutons d'action de la commande en cours
             boutonAjouter.setEnabled(true);
             boutonRetirer.setEnabled(true);
             boutonValider.setEnabled(true);
 
             // On bloque la modification du numéro de table
             champNumeroTable.setEditable(false);
+
+            // On réinitialise l'affichage de la commande en cours
+            zoneCommande.setText("-- Aucun plat commandé --");
+            labelTotal.setText("Total : 0,00 EUR");
 
             // On affiche une boîte de dialogue de confirmation (JOptionPane)
             JOptionPane.showMessageDialog(
@@ -295,7 +361,7 @@ public class FenetreRestaurant extends JFrame {
         }
     }
 
-    // Méthode : ajoute le plat sélectionné dans la JList à la commande
+    // Méthode : ajoute le plat sélectionné dans la JList à la commande en cours
     private void ajouterPlat() {
 
         // On récupère l'index sélectionné dans la JList (commence à 0)
@@ -315,14 +381,14 @@ public class FenetreRestaurant extends JFrame {
         // On récupère le plat correspondant dans le menu (index + 1 car getPlatParNumero commence à 1)
         Plat platChoisi = menu.getPlatParNumero(index + 1);
 
-        // On ajoute le plat à la commande
+        // On ajoute le plat à la commande en cours
         commande.ajouterPlat(platChoisi);
 
-        // On met à jour l'affichage de la commande
+        // On met à jour l'affichage de la commande en cours
         mettreAJourAffichageCommande();
     }
 
-    // Méthode : retire le dernier plat ajouté à la commande
+    // Méthode : retire le dernier plat ajouté à la commande en cours
     private void retirerDernierPlat() {
 
         // On vérifie que la commande n'est pas vide
@@ -343,7 +409,7 @@ public class FenetreRestaurant extends JFrame {
         mettreAJourAffichageCommande();
     }
 
-    // Méthode : met à jour la JTextArea et le JLabel du total
+    // Méthode : met à jour la JTextArea et le JLabel du total de la commande en cours
     private void mettreAJourAffichageCommande() {
 
         // Si la commande est vide, on réinitialise l'affichage
@@ -369,7 +435,7 @@ public class FenetreRestaurant extends JFrame {
         labelTotal.setText(String.format("Total : %.2f EUR", commande.calculerTotal()));
     }
 
-    // Méthode : valide la commande et affiche un récapitulatif
+    // Méthode : valide la commande en cours et l'ajoute à la liste des commandes en cours
     private void validerCommande() {
 
         // On vérifie que la commande n'est pas vide
@@ -383,43 +449,131 @@ public class FenetreRestaurant extends JFrame {
             return;
         }
 
-        // On construit le récapitulatif final
-        StringBuilder recap = new StringBuilder();
-        recap.append("RÉCAPITULATIF DE LA COMMANDE\n");
-        recap.append("================================\n");
+        // On ajoute la commande validée au gestionnaire des commandes en cours
+        gestionCommandes.ajouterCommande(commande);
 
-        ArrayList<Plat> platsCommandes = commande.getPlatsCommandes();
-        for (int i = 0; i < platsCommandes.size(); i++) {
-            Plat p = platsCommandes.get(i);
-            recap.append(String.format("%d. %s  -  %.2f EUR%n", (i + 1), p.getNom(), p.getPrix()));
-        }
+        // On rafraîchit la liste graphique des commandes en cours
+        rafraichirListeCommandes();
 
-        recap.append("--------------------------------\n");
-        recap.append(String.format("TOTAL : %.2f EUR%n", commande.calculerTotal()));
-        recap.append("\nVotre commande a été envoyée en cuisine !\nBon appétit !");
-
-        // Affichage du récapitulatif dans une boîte de dialogue (JOptionPane)
+        // On affiche une confirmation
         JOptionPane.showMessageDialog(
             this,
-            recap.toString(),
+            "Commande de la table N°" + commande.getNumeroTable() + " envoyée en cuisine !\n" +
+            String.format("Total : %.2f EUR", commande.calculerTotal()) + "\n\n" +
+            "Elle apparaît maintenant dans les commandes en cours.",
             "Commande validée !",
             JOptionPane.INFORMATION_MESSAGE
         );
 
-        // On désactive les boutons après validation
-        boutonAjouter.setEnabled(false);
-        boutonRetirer.setEnabled(false);
-        boutonValider.setEnabled(false);
-
-        // On met à jour la zone de commande
-        zoneCommande.setText("Commande validée et envoyée en cuisine !\n\nBon appétit !");
-        labelTotal.setText(String.format("Total payé : %.2f EUR", commande.calculerTotal()));
+        // On prépare la saisie d'une nouvelle commande (la liste en cours est conservée)
+        preparerNouvelleCommande();
     }
 
-    // Méthode : réinitialise l'application pour une nouvelle commande
-    private void reinitialiserCommande() {
+    // Méthode : reconstruit la JList des commandes en cours à partir du gestionnaire
+    private void rafraichirListeCommandes() {
 
-        // On réinitialise la commande
+        // On vide d'abord le modèle
+        modeleCommandes.clear();
+
+        // On parcourt toutes les commandes en cours avec une boucle for
+        ArrayList<Commande> toutesLesCommandes = gestionCommandes.getCommandes();
+        for (int i = 0; i < toutesLesCommandes.size(); i++) {
+            Commande c = toutesLesCommandes.get(i);
+            // On affiche un résumé : table, nombre de plats et total
+            modeleCommandes.addElement(String.format(
+                "Table %d  -  %d plat(s)  -  %.2f EUR",
+                c.getNumeroTable(), c.getNombrePlats(), c.calculerTotal()
+            ));
+        }
+    }
+
+    // Méthode : affiche le détail de la commande sélectionnée dans la liste
+    private void afficherCommandeSelectionnee() {
+
+        // On récupère l'index sélectionné dans la JList des commandes
+        int index = listeCommandes.getSelectedIndex();
+
+        // Si aucune commande n'est sélectionnée
+        if (index == -1) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Veuillez sélectionner une commande dans la liste.",
+                "Aucune sélection",
+                JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        // On récupère la commande correspondante
+        Commande c = gestionCommandes.getCommande(index);
+
+        // On construit le détail de la commande
+        StringBuilder detail = new StringBuilder();
+        detail.append("DÉTAIL DE LA COMMANDE\n");
+        detail.append("Table N°").append(c.getNumeroTable()).append("\n");
+        detail.append("================================\n");
+
+        ArrayList<Plat> platsCommandes = c.getPlatsCommandes();
+        for (int i = 0; i < platsCommandes.size(); i++) {
+            Plat p = platsCommandes.get(i);
+            detail.append(String.format("%d. %s  -  %.2f EUR%n", (i + 1), p.getNom(), p.getPrix()));
+        }
+
+        detail.append("--------------------------------\n");
+        detail.append(String.format("TOTAL : %.2f EUR", c.calculerTotal()));
+
+        // Affichage du détail dans une boîte de dialogue (JOptionPane)
+        JOptionPane.showMessageDialog(
+            this,
+            detail.toString(),
+            "Commande - Table N°" + c.getNumeroTable(),
+            JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+
+    // Méthode : supprime la commande sélectionnée dans la liste
+    private void supprimerCommandeSelectionnee() {
+
+        // On récupère l'index sélectionné
+        int index = listeCommandes.getSelectedIndex();
+
+        // Si aucune commande n'est sélectionnée
+        if (index == -1) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Veuillez sélectionner une commande à supprimer.",
+                "Aucune sélection",
+                JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        // On récupère la commande pour afficher son numéro de table
+        Commande c = gestionCommandes.getCommande(index);
+
+        // On demande confirmation avant de supprimer (JOptionPane question)
+        int reponse = JOptionPane.showConfirmDialog(
+            this,
+            "Voulez-vous vraiment supprimer la commande de la table N°" + c.getNumeroTable() + " ?",
+            "Confirmer la suppression",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+
+        // Si l'utilisateur confirme
+        if (reponse == JOptionPane.YES_OPTION) {
+            // On supprime la commande du gestionnaire
+            gestionCommandes.supprimerCommande(index);
+
+            // On rafraîchit la liste graphique
+            rafraichirListeCommandes();
+        }
+    }
+
+    // Méthode : prépare la saisie d'une nouvelle commande (sans toucher aux commandes en cours)
+    private void preparerNouvelleCommande() {
+
+        // On réinitialise la commande en cours de saisie
         commande = null;
 
         // On réactive et vide le champ de saisie de la table
@@ -429,12 +583,12 @@ public class FenetreRestaurant extends JFrame {
         // On remet le titre initial
         setTitle("Restaurant Java Bistro");
 
-        // On désactive les boutons
+        // On désactive les boutons de la commande en cours
         boutonAjouter.setEnabled(false);
         boutonRetirer.setEnabled(false);
         boutonValider.setEnabled(false);
 
-        // On réinitialise la zone d'affichage
+        // On réinitialise la zone d'affichage de la commande en cours
         zoneCommande.setText("-- Aucun plat commandé --");
         labelTotal.setText("Total : 0,00 EUR");
 
