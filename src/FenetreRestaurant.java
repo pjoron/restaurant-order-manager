@@ -148,7 +148,7 @@ public class FenetreRestaurant extends JFrame {
         menuAide.add(itemAPropos);
 
         // Troisième menu : "Langue" pour basculer entre français et coréen
-        menuLangue = new JMenu(t("Langue", "언어"));
+        menuLangue = new JMenu(t("Langue / 언어", "언어"));
 
         // Choix "Français" : les libellés des deux choix restent fixes
         JMenuItem itemFrancais = new JMenuItem("Français");
