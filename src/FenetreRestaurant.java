@@ -16,7 +16,27 @@ public class FenetreRestaurant extends JFrame {
     // Gestionnaire de toutes les commandes validées (commandes en cours dans le restaurant)
     private GestionCommandes gestionCommandes;
 
-    // --- Composants Swing de l'interface ---
+    // Langue de l'interface : true = français, false = coréen
+    private boolean francais = true;
+
+    // --- Composants Swing dont le texte change avec la langue ---
+
+    // Éléments de la barre de menu
+    private JMenu menuFichier;
+    private JMenuItem itemNouvelle;
+    private JMenuItem itemQuitter;
+    private JMenu menuAide;
+    private JMenuItem itemAPropos;
+    private JMenu menuLangue;
+
+    // Panneaux avec bordure titrée (le titre change avec la langue)
+    private JPanel panneauMenu;
+    private JPanel panneauCommande;
+    private JPanel panneauCommandesEnCours;
+
+    // Étiquette et bouton de la zone du haut
+    private JLabel labelTable;
+    private JButton boutonConfirmerTable;
 
     // Champ de saisie pour le numéro de table (JTextField)
     private JTextField champNumeroTable;
@@ -73,6 +93,11 @@ public class FenetreRestaurant extends JFrame {
         setVisible(true);
     }
 
+    // Méthode utilitaire : renvoie le texte français ou coréen selon la langue choisie
+    private String t(String fr, String ko) {
+        return francais ? fr : ko;
+    }
+
     // Méthode privée : crée la barre de menu en haut de la fenêtre
     private void creerBarreMenu() {
 
@@ -80,10 +105,10 @@ public class FenetreRestaurant extends JFrame {
         JMenuBar barreMenu = new JMenuBar();
 
         // Premier menu : "Fichier"
-        JMenu menuFichier = new JMenu("Fichier");
+        menuFichier = new JMenu(t("Fichier", "파일"));
 
         // Élément "Nouvelle commande" pour réinitialiser la saisie
-        JMenuItem itemNouvelle = new JMenuItem("Nouvelle commande");
+        itemNouvelle = new JMenuItem(t("Nouvelle commande", "새 주문"));
         itemNouvelle.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 preparerNouvelleCommande();
@@ -91,7 +116,7 @@ public class FenetreRestaurant extends JFrame {
         });
 
         // Élément "Quitter" pour fermer l'application
-        JMenuItem itemQuitter = new JMenuItem("Quitter");
+        itemQuitter = new JMenuItem(t("Quitter", "종료"));
         itemQuitter.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 System.exit(0);
@@ -103,18 +128,18 @@ public class FenetreRestaurant extends JFrame {
         menuFichier.add(itemQuitter);
 
         // Deuxième menu : "Aide"
-        JMenu menuAide = new JMenu("Aide");
+        menuAide = new JMenu(t("Aide", "도움말"));
 
         // Élément "À propos" : affiche une boîte de dialogue (JOptionPane)
-        JMenuItem itemAPropos = new JMenuItem("À propos");
+        itemAPropos = new JMenuItem(t("À propos", "정보"));
         itemAPropos.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 JOptionPane.showMessageDialog(
                     FenetreRestaurant.this,
                     "Restaurant Java Bistro\n" +
-                    "Application de gestion de commandes\n" +
-                    "Réalisée en Java avec Swing",
-                    "À propos",
+                    t("Application de gestion de commandes", "주문 관리 애플리케이션") + "\n" +
+                    t("Réalisée en Java avec Swing", "Java Swing으로 제작"),
+                    t("À propos", "정보"),
                     JOptionPane.INFORMATION_MESSAGE
                 );
             }
@@ -122,9 +147,34 @@ public class FenetreRestaurant extends JFrame {
 
         menuAide.add(itemAPropos);
 
+        // Troisième menu : "Langue" pour basculer entre français et coréen
+        menuLangue = new JMenu(t("Langue", "언어"));
+
+        // Choix "Français" : les libellés des deux choix restent fixes
+        JMenuItem itemFrancais = new JMenuItem("Français");
+        itemFrancais.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                francais = true;        // On passe en français
+                mettreAJourTextes();    // On rafraîchit toute l'interface
+            }
+        });
+
+        // Choix "한국어" (coréen)
+        JMenuItem itemCoreen = new JMenuItem("한국어");
+        itemCoreen.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                francais = false;       // On passe en coréen
+                mettreAJourTextes();    // On rafraîchit toute l'interface
+            }
+        });
+
+        menuLangue.add(itemFrancais);
+        menuLangue.add(itemCoreen);
+
         // On ajoute les menus à la barre
         barreMenu.add(menuFichier);
         barreMenu.add(menuAide);
+        barreMenu.add(menuLangue);
 
         // On attache la barre de menus à la fenêtre
         setJMenuBar(barreMenu);
@@ -140,7 +190,7 @@ public class FenetreRestaurant extends JFrame {
         // ---- PANNEAU DU HAUT : titre et saisie du numéro de table ----
         JPanel panneauHaut = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
 
-        // Titre principal de l'application (JLabel)
+        // Titre principal de l'application (JLabel) - nom du restaurant, identique dans les deux langues
         JLabel labelTitre = new JLabel("Restaurant Java Bistro");
         labelTitre.setFont(new Font("Arial", Font.BOLD, 20));
 
@@ -148,11 +198,11 @@ public class FenetreRestaurant extends JFrame {
         JLabel separateur = new JLabel(" | ");
 
         // Étiquette et champ pour le numéro de table
-        JLabel labelTable = new JLabel("Numéro de table :");
+        labelTable = new JLabel(t("Numéro de table :", "테이블 번호 :"));
         champNumeroTable = new JTextField(5);
 
         // Bouton pour confirmer le numéro de table
-        JButton boutonConfirmerTable = new JButton("Confirmer la table");
+        boutonConfirmerTable = new JButton(t("Confirmer la table", "테이블 확인"));
         boutonConfirmerTable.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 confirmerTable();
@@ -169,8 +219,8 @@ public class FenetreRestaurant extends JFrame {
         JPanel panneauCentre = new JPanel(new GridLayout(1, 3, 10, 0));
 
         // --- Colonne 1 : liste des plats du menu (JList + JScrollPane) ---
-        JPanel panneauMenu = new JPanel(new BorderLayout());
-        panneauMenu.setBorder(BorderFactory.createTitledBorder("Menu du restaurant"));
+        panneauMenu = new JPanel(new BorderLayout());
+        panneauMenu.setBorder(BorderFactory.createTitledBorder(t("Menu du restaurant", "레스토랑 메뉴")));
 
         // On crée le modèle de données pour la JList du menu
         DefaultListModel<String> modeleMenu = new DefaultListModel<>();
@@ -192,20 +242,20 @@ public class FenetreRestaurant extends JFrame {
         panneauMenu.add(scrollMenu, BorderLayout.CENTER);
 
         // --- Colonne 2 : commande en cours de saisie ---
-        JPanel panneauCommande = new JPanel(new BorderLayout(5, 5));
-        panneauCommande.setBorder(BorderFactory.createTitledBorder("Commande en cours"));
+        panneauCommande = new JPanel(new BorderLayout(5, 5));
+        panneauCommande.setBorder(BorderFactory.createTitledBorder(t("Commande en cours", "현재 주문")));
 
         // Zone de texte non-éditable pour afficher la commande (JTextArea)
         zoneCommande = new JTextArea();
         zoneCommande.setEditable(false);
         zoneCommande.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        zoneCommande.setText("-- Aucun plat commandé --");
+        zoneCommande.setText(t("-- Aucun plat commandé --", "-- 주문한 요리 없음 --"));
 
         // On enveloppe la JTextArea dans un JScrollPane
         JScrollPane scrollCommande = new JScrollPane(zoneCommande);
 
         // Étiquette affichant le total (JLabel)
-        labelTotal = new JLabel("Total : 0,00 EUR");
+        labelTotal = new JLabel(t("Total : ", "총액 : ") + "0,00 EUR");
         labelTotal.setFont(new Font("Arial", Font.BOLD, 14));
         labelTotal.setHorizontalAlignment(SwingConstants.RIGHT);
 
@@ -213,7 +263,7 @@ public class FenetreRestaurant extends JFrame {
         JPanel panneauBoutonsCommande = new JPanel(new GridLayout(3, 1, 0, 5));
 
         // Bouton "Ajouter" : ajoute le plat sélectionné à la commande
-        boutonAjouter = new JButton("Ajouter le plat sélectionné");
+        boutonAjouter = new JButton(t("Ajouter le plat sélectionné", "선택한 요리 추가"));
         boutonAjouter.setEnabled(false); // Désactivé jusqu'à confirmation de la table
         boutonAjouter.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -222,7 +272,7 @@ public class FenetreRestaurant extends JFrame {
         });
 
         // Bouton "Retirer" : retire le dernier plat ajouté
-        boutonRetirer = new JButton("Retirer le dernier plat");
+        boutonRetirer = new JButton(t("Retirer le dernier plat", "마지막 요리 제거"));
         boutonRetirer.setEnabled(false);
         boutonRetirer.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -231,7 +281,7 @@ public class FenetreRestaurant extends JFrame {
         });
 
         // Bouton "Valider" : valide la commande et l'ajoute aux commandes en cours
-        boutonValider = new JButton("Valider la commande");
+        boutonValider = new JButton(t("Valider la commande", "주문 확정"));
         boutonValider.setEnabled(false);
         boutonValider.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -252,8 +302,8 @@ public class FenetreRestaurant extends JFrame {
         panneauCommande.add(basCommande, BorderLayout.SOUTH);
 
         // --- Colonne 3 : commandes validées en cours ---
-        JPanel panneauCommandesEnCours = new JPanel(new BorderLayout(5, 5));
-        panneauCommandesEnCours.setBorder(BorderFactory.createTitledBorder("Commandes en cours"));
+        panneauCommandesEnCours = new JPanel(new BorderLayout(5, 5));
+        panneauCommandesEnCours.setBorder(BorderFactory.createTitledBorder(t("Commandes en cours", "진행 중인 주문")));
 
         // Modèle de données pour la liste des commandes validées
         modeleCommandes = new DefaultListModel<>();
@@ -270,7 +320,7 @@ public class FenetreRestaurant extends JFrame {
         JPanel panneauBoutonsListe = new JPanel(new GridLayout(2, 1, 0, 5));
 
         // Bouton "Afficher" : affiche le détail de la commande sélectionnée
-        boutonAfficherCommande = new JButton("Afficher la commande");
+        boutonAfficherCommande = new JButton(t("Afficher la commande", "주문 보기"));
         boutonAfficherCommande.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 afficherCommandeSelectionnee();
@@ -278,7 +328,7 @@ public class FenetreRestaurant extends JFrame {
         });
 
         // Bouton "Supprimer" : supprime la commande sélectionnée
-        boutonSupprimerCommande = new JButton("Supprimer la commande");
+        boutonSupprimerCommande = new JButton(t("Supprimer la commande", "주문 삭제"));
         boutonSupprimerCommande.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 supprimerCommandeSelectionnee();
@@ -304,6 +354,54 @@ public class FenetreRestaurant extends JFrame {
         add(panneauPrincipal);
     }
 
+    // Méthode : met à jour tous les textes de l'interface selon la langue choisie
+    private void mettreAJourTextes() {
+
+        // Titre de la fenêtre (avec ou sans numéro de table)
+        if (commande != null) {
+            setTitle("Restaurant Java Bistro  -  " + t("Table N°", "테이블 ") + commande.getNumeroTable() + t("", "번"));
+        } else {
+            setTitle("Restaurant Java Bistro");
+        }
+
+        // Barre de menu
+        menuFichier.setText(t("Fichier", "파일"));
+        itemNouvelle.setText(t("Nouvelle commande", "새 주문"));
+        itemQuitter.setText(t("Quitter", "종료"));
+        menuAide.setText(t("Aide", "도움말"));
+        itemAPropos.setText(t("À propos", "정보"));
+        menuLangue.setText(t("Langue", "언어"));
+
+        // Titres des bordures des trois colonnes
+        panneauMenu.setBorder(BorderFactory.createTitledBorder(t("Menu du restaurant", "레스토랑 메뉴")));
+        panneauCommande.setBorder(BorderFactory.createTitledBorder(t("Commande en cours", "현재 주문")));
+        panneauCommandesEnCours.setBorder(BorderFactory.createTitledBorder(t("Commandes en cours", "진행 중인 주문")));
+
+        // Zone du haut
+        labelTable.setText(t("Numéro de table :", "테이블 번호 :"));
+        boutonConfirmerTable.setText(t("Confirmer la table", "테이블 확인"));
+
+        // Boutons de la commande en cours
+        boutonAjouter.setText(t("Ajouter le plat sélectionné", "선택한 요리 추가"));
+        boutonRetirer.setText(t("Retirer le dernier plat", "마지막 요리 제거"));
+        boutonValider.setText(t("Valider la commande", "주문 확정"));
+
+        // Boutons des commandes en cours
+        boutonAfficherCommande.setText(t("Afficher la commande", "주문 보기"));
+        boutonSupprimerCommande.setText(t("Supprimer la commande", "주문 삭제"));
+
+        // Zone de la commande en cours : on réaffiche selon son contenu
+        if (commande == null || commande.getNombrePlats() == 0) {
+            zoneCommande.setText(t("-- Aucun plat commandé --", "-- 주문한 요리 없음 --"));
+            labelTotal.setText(t("Total : ", "총액 : ") + "0,00 EUR");
+        } else {
+            mettreAJourAffichageCommande();
+        }
+
+        // On reconstruit la liste des commandes en cours dans la nouvelle langue
+        rafraichirListeCommandes();
+    }
+
     // Méthode : confirme le numéro de table et crée la commande en cours
     private void confirmerTable() {
 
@@ -313,8 +411,8 @@ public class FenetreRestaurant extends JFrame {
         if (texte.isEmpty()) {
             JOptionPane.showMessageDialog(
                 this,
-                "Veuillez entrer un numéro de table.",
-                "Erreur",
+                t("Veuillez entrer un numéro de table.", "테이블 번호를 입력하세요."),
+                t("Erreur", "오류"),
                 JOptionPane.ERROR_MESSAGE
             );
             return;
@@ -328,7 +426,7 @@ public class FenetreRestaurant extends JFrame {
             commande = new Commande(numTable);
 
             // On met à jour le titre de la fenêtre
-            setTitle("Restaurant Java Bistro  -  Table N°" + numTable);
+            setTitle("Restaurant Java Bistro  -  " + t("Table N°", "테이블 ") + numTable + t("", "번"));
 
             // On active les boutons d'action de la commande en cours
             boutonAjouter.setEnabled(true);
@@ -339,14 +437,15 @@ public class FenetreRestaurant extends JFrame {
             champNumeroTable.setEditable(false);
 
             // On réinitialise l'affichage de la commande en cours
-            zoneCommande.setText("-- Aucun plat commandé --");
-            labelTotal.setText("Total : 0,00 EUR");
+            zoneCommande.setText(t("-- Aucun plat commandé --", "-- 주문한 요리 없음 --"));
+            labelTotal.setText(t("Total : ", "총액 : ") + "0,00 EUR");
 
             // On affiche une boîte de dialogue de confirmation (JOptionPane)
             JOptionPane.showMessageDialog(
                 this,
-                "Table N°" + numTable + " confirmée !\nVous pouvez maintenant passer votre commande.",
-                "Bienvenue !",
+                t("Table N°" + numTable + " confirmée !\nVous pouvez maintenant passer votre commande.",
+                  "테이블 " + numTable + "번이 확인되었습니다!\n이제 주문하실 수 있습니다."),
+                t("Bienvenue !", "환영합니다!"),
                 JOptionPane.INFORMATION_MESSAGE
             );
 
@@ -354,8 +453,8 @@ public class FenetreRestaurant extends JFrame {
             // Si la saisie n'est pas un entier valide
             JOptionPane.showMessageDialog(
                 this,
-                "Le numéro de table doit être un nombre entier.",
-                "Erreur de saisie",
+                t("Le numéro de table doit être un nombre entier.", "테이블 번호는 정수여야 합니다."),
+                t("Erreur de saisie", "입력 오류"),
                 JOptionPane.ERROR_MESSAGE
             );
         }
@@ -371,8 +470,8 @@ public class FenetreRestaurant extends JFrame {
         if (index == -1) {
             JOptionPane.showMessageDialog(
                 this,
-                "Veuillez sélectionner un plat dans la liste.",
-                "Aucune sélection",
+                t("Veuillez sélectionner un plat dans la liste.", "목록에서 요리를 선택하세요."),
+                t("Aucune sélection", "선택 없음"),
                 JOptionPane.WARNING_MESSAGE
             );
             return;
@@ -395,8 +494,8 @@ public class FenetreRestaurant extends JFrame {
         if (commande.getNombrePlats() == 0) {
             JOptionPane.showMessageDialog(
                 this,
-                "La commande est déjà vide.",
-                "Commande vide",
+                t("La commande est déjà vide.", "주문이 이미 비어 있습니다."),
+                t("Commande vide", "빈 주문"),
                 JOptionPane.WARNING_MESSAGE
             );
             return;
@@ -414,8 +513,8 @@ public class FenetreRestaurant extends JFrame {
 
         // Si la commande est vide, on réinitialise l'affichage
         if (commande.getNombrePlats() == 0) {
-            zoneCommande.setText("-- Aucun plat commandé --");
-            labelTotal.setText("Total : 0,00 EUR");
+            zoneCommande.setText(t("-- Aucun plat commandé --", "-- 주문한 요리 없음 --"));
+            labelTotal.setText(t("Total : ", "총액 : ") + "0,00 EUR");
             return;
         }
 
@@ -432,7 +531,7 @@ public class FenetreRestaurant extends JFrame {
         zoneCommande.setText(contenu.toString());
 
         // On met à jour le JLabel du total
-        labelTotal.setText(String.format("Total : %.2f EUR", commande.calculerTotal()));
+        labelTotal.setText(t("Total : ", "총액 : ") + String.format("%.2f EUR", commande.calculerTotal()));
     }
 
     // Méthode : valide la commande en cours et l'ajoute à la liste des commandes en cours
@@ -442,8 +541,9 @@ public class FenetreRestaurant extends JFrame {
         if (commande.getNombrePlats() == 0) {
             JOptionPane.showMessageDialog(
                 this,
-                "Votre commande est vide.\nAjoutez des plats avant de valider.",
-                "Commande vide",
+                t("Votre commande est vide.\nAjoutez des plats avant de valider.",
+                  "주문이 비어 있습니다.\n확정하기 전에 요리를 추가하세요."),
+                t("Commande vide", "빈 주문"),
                 JOptionPane.WARNING_MESSAGE
             );
             return;
@@ -458,10 +558,13 @@ public class FenetreRestaurant extends JFrame {
         // On affiche une confirmation
         JOptionPane.showMessageDialog(
             this,
-            "Commande de la table N°" + commande.getNumeroTable() + " envoyée en cuisine !\n" +
-            String.format("Total : %.2f EUR", commande.calculerTotal()) + "\n\n" +
-            "Elle apparaît maintenant dans les commandes en cours.",
-            "Commande validée !",
+            t("Commande de la table N°" + commande.getNumeroTable() + " envoyée en cuisine !\n" +
+              String.format("Total : %.2f EUR", commande.calculerTotal()) + "\n\n" +
+              "Elle apparaît maintenant dans les commandes en cours.",
+              "테이블 " + commande.getNumeroTable() + "번 주문이 주방으로 전송되었습니다!\n" +
+              String.format("총액 : %.2f EUR", commande.calculerTotal()) + "\n\n" +
+              "이제 진행 중인 주문에 표시됩니다."),
+            t("Commande validée !", "주문 확정!"),
             JOptionPane.INFORMATION_MESSAGE
         );
 
@@ -481,7 +584,7 @@ public class FenetreRestaurant extends JFrame {
             Commande c = toutesLesCommandes.get(i);
             // On affiche un résumé : table, nombre de plats et total
             modeleCommandes.addElement(String.format(
-                "Table %d  -  %d plat(s)  -  %.2f EUR",
+                t("Table %d  -  %d plat(s)  -  %.2f EUR", "테이블 %d  -  요리 %d개  -  %.2f EUR"),
                 c.getNumeroTable(), c.getNombrePlats(), c.calculerTotal()
             ));
         }
@@ -497,8 +600,8 @@ public class FenetreRestaurant extends JFrame {
         if (index == -1) {
             JOptionPane.showMessageDialog(
                 this,
-                "Veuillez sélectionner une commande dans la liste.",
-                "Aucune sélection",
+                t("Veuillez sélectionner une commande dans la liste.", "목록에서 주문을 선택하세요."),
+                t("Aucune sélection", "선택 없음"),
                 JOptionPane.WARNING_MESSAGE
             );
             return;
@@ -509,8 +612,8 @@ public class FenetreRestaurant extends JFrame {
 
         // On construit le détail de la commande
         StringBuilder detail = new StringBuilder();
-        detail.append("DÉTAIL DE LA COMMANDE\n");
-        detail.append("Table N°").append(c.getNumeroTable()).append("\n");
+        detail.append(t("DÉTAIL DE LA COMMANDE\n", "주문 상세\n"));
+        detail.append(t("Table N°", "테이블 ")).append(c.getNumeroTable()).append(t("", "번")).append("\n");
         detail.append("================================\n");
 
         ArrayList<Plat> platsCommandes = c.getPlatsCommandes();
@@ -520,13 +623,13 @@ public class FenetreRestaurant extends JFrame {
         }
 
         detail.append("--------------------------------\n");
-        detail.append(String.format("TOTAL : %.2f EUR", c.calculerTotal()));
+        detail.append(t("TOTAL : ", "총액 : ")).append(String.format("%.2f EUR", c.calculerTotal()));
 
         // Affichage du détail dans une boîte de dialogue (JOptionPane)
         JOptionPane.showMessageDialog(
             this,
             detail.toString(),
-            "Commande - Table N°" + c.getNumeroTable(),
+            t("Commande - Table N°", "주문 - 테이블 ") + c.getNumeroTable() + t("", "번"),
             JOptionPane.INFORMATION_MESSAGE
         );
     }
@@ -541,8 +644,8 @@ public class FenetreRestaurant extends JFrame {
         if (index == -1) {
             JOptionPane.showMessageDialog(
                 this,
-                "Veuillez sélectionner une commande à supprimer.",
-                "Aucune sélection",
+                t("Veuillez sélectionner une commande à supprimer.", "삭제할 주문을 선택하세요."),
+                t("Aucune sélection", "선택 없음"),
                 JOptionPane.WARNING_MESSAGE
             );
             return;
@@ -554,8 +657,9 @@ public class FenetreRestaurant extends JFrame {
         // On demande confirmation avant de supprimer (JOptionPane question)
         int reponse = JOptionPane.showConfirmDialog(
             this,
-            "Voulez-vous vraiment supprimer la commande de la table N°" + c.getNumeroTable() + " ?",
-            "Confirmer la suppression",
+            t("Voulez-vous vraiment supprimer la commande de la table N°" + c.getNumeroTable() + " ?",
+              "테이블 " + c.getNumeroTable() + "번 주문을 정말 삭제하시겠습니까?"),
+            t("Confirmer la suppression", "삭제 확인"),
             JOptionPane.YES_NO_OPTION,
             JOptionPane.QUESTION_MESSAGE
         );
@@ -589,8 +693,8 @@ public class FenetreRestaurant extends JFrame {
         boutonValider.setEnabled(false);
 
         // On réinitialise la zone d'affichage de la commande en cours
-        zoneCommande.setText("-- Aucun plat commandé --");
-        labelTotal.setText("Total : 0,00 EUR");
+        zoneCommande.setText(t("-- Aucun plat commandé --", "-- 주문한 요리 없음 --"));
+        labelTotal.setText(t("Total : ", "총액 : ") + "0,00 EUR");
 
         // On désélectionne la liste des plats
         listeMenu.clearSelection();

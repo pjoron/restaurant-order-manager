@@ -15,7 +15,8 @@
 - Afficher la liste des commandes en cours / 진행 중인 주문 목록 표시
 - Afficher le détail d'une commande en cours / 진행 중인 주문의 상세 내용 표시
 - Supprimer une commande en cours (avec confirmation) / 진행 중인 주문 삭제 (확인 포함)
-- Barre de menu (JMenuBar) avec "Fichier" et "Aide" / "파일" 및 "도움말"이 있는 메뉴 바 (JMenuBar)
+- Barre de menu (JMenuBar) avec "Fichier", "Aide" et "Langue" / "파일", "도움말", "언어" 메뉴 바 (JMenuBar)
+- Interface bilingue : bascule français / coréen en un clic / 이중 언어 인터페이스 : 클릭 한 번으로 프랑스어 / 한국어 전환
 - Démarrer une nouvelle commande ou quitter depuis le menu / 메뉴에서 새 주문 시작 또는 종료
 
 ---
